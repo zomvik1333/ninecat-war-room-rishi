@@ -1,0 +1,162 @@
+#!/usr/bin/env node
+/* Nine Cat War Room, scan ingest.
+   Turns the text printed by scan/yahoo-scan.js into the data files the Pickups and Trades tab reads.
+   Use: node scan/ingest.js raw1.txt [raw2.txt ...]
+        node scan/ingest.js --partial players_only.txt     (skips the end of scan check, for player name lines only)
+        node scan/ingest.js --force raw1.txt               (recovery only, loads a scan that is older than the one on file)
+        node scan/ingest.js --snapshot raw1.txt            (recovery only, also makes this scan the trade list's weekly snapshot)
+   Every line carries a checksum. If any line is wrong nothing is written and the bad lines are listed.
+   Every check runs first. The data files are written only at the very end, after all of them have passed. */
+const fs=require('fs'), path=require('path');
+const DIR=path.join(__dirname,'..','data');
+const ck=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return ('000'+((h>>>0)%1679616).toString(36)).slice(-4)};
+const args=process.argv.slice(2); const partial=args.includes('--partial'), force=args.includes('--force'), snapForce=args.includes('--snapshot'); const files=args.filter(a=>a.indexOf('--')!==0);
+if(!files.length){ console.log('give one or more raw scan text files'); process.exit(2); }
+const raw=files.map(f=>fs.readFileSync(f,'utf8')).join('\n');
+const lines=raw.split('~').map(s=>s.replace(/\s+/g,' ').trim()).filter(s=>/^[A-Z]\d?\|/.test(s));
+const bad=[]; let end=null; const body=[];
+lines.forEach((l,i)=>{ const k=l.lastIndexOf('|'); if(l[0]==='E'&&l[1]==='|'){ end=l; return; } if(ck(l.slice(0,k))!==l.slice(k+1)) bad.push((i+1)+'  '+l.slice(0,70)); body.push(l); });
+if(bad.length){ console.log('CHECK FAILED on '+bad.length+' line(s), nothing written. Read these lines again from the scan page and fix them.'); bad.forEach(b=>console.log('  line '+b)); process.exit(1); }
+if(!partial){
+  if(!end){ console.log('CHECK FAILED, the end line (E) is missing, so part of the scan was not copied. Nothing written.'); process.exit(1); }
+  const e=end.split('|');
+  if(+e[1]!==body.length){ console.log('CHECK FAILED, the scan had '+e[1]+' lines but '+body.length+' were copied. Nothing written.'); process.exit(1); }
+  if(ck(body.join(''))!==e[2]){ console.log('CHECK FAILED, lines are out of order or duplicated. Nothing written.'); process.exit(1); }
+}
+const rd=(f,d)=>{ try{ return JSON.parse(fs.readFileSync(path.join(DIR,f),'utf8')); }catch(e){ return d; } };
+// nothing is written and nothing is reported as saved until every check has passed. wr and say only queue, done() at the end does the work
+const out=[], say=[]; const wr=(f,o)=>out.push([f,JSON.stringify(o)]);
+const stop=m=>{ console.log(m); process.exit(1); };
+const done=()=>{ if(out.length && !fs.existsSync(DIR)) fs.mkdirSync(DIR,{recursive:true}); out.forEach(o=>fs.writeFileSync(path.join(DIR,o[0]),o[1])); say.forEach(m=>console.log(m)); };
+const F=body.map(l=>{ const p=l.split('|'); p.pop(); return p; });
+const of=t=>F.filter(f=>f[0]===t);
+const n=x=>x===''||x==null?null:+x, t10=x=>x===''||x==null?null:+x/10;
+const asc=s=>String(s||'').replace(/[\u2018\u2019\u02bc]/g,"'");
+
+// player names
+const players=rd('players.json',{p:{}}); let newP=0;
+of('P').forEach(f=>{ const old=players.p[f[1]]; if(!old) newP++; players.p[f[1]]=[asc(f[2])||(old&&old[0])||('Player '+f[1]),f[3]||(old&&old[1])||'',f[4]||(old&&old[2])||'',f[5]!==''?n(f[5]):(old?old[3]:null)]; });
+const sched=rd('schedule.json',null);
+if(sched&&sched.games) of('P').forEach(f=>{ if(f[3]&&!sched.games[f[3]]) say.push('WARNING, player '+f[1]+' '+asc(f[2])+' has the NBA team code '+f[3]+' and that is not a team in data/schedule.json. Fine for an NBA free agent, otherwise read that line again.'); });
+// Vikas, Nov 11 2026, version 26.17. The stamp moves on every daily scan, not only when a player line came with it. check-live.js compares this stamp
+// with the live site, and a scan with no player lines (Nov 11) left it unchanged, so LIVE OK could not tell a deploy that went through from one that did not
+const stampP=of('P').length>0 || (!partial && of('H').length>0);
+if(stampP) players.updated=new Date().toISOString().slice(0,16);
+const saveP=()=>{ if(stampP) wr('players.json',players); };
+
+// league schedule, one time
+const K=partial?[]:of('K');
+if(K.length && (K.length!==21 || K.some(f=>!f[2]||!f[3]))) stop('CHECK FAILED, the league schedule needs 21 weeks with dates and this copy has '+K.length+'. Nothing written. Run the schedule scan again.');
+let league=null;
+if(K.length){
+  const TEAMS={1:{name:"Vinny's Team",slot:2},2:{name:"Shu's Heard of Goats",slot:7},3:{name:'Extraterrestrial',slot:10},4:{name:"Haziq's Dandy Team",slot:3},5:{name:'Registered Nurse',slot:4},6:{name:'Lickmylulu',slot:8},7:{name:'The Jokic On You',slot:1},8:{name:'Rohan and Vikas CoManaged Team',slot:9},11:{name:'Vik in a Box',slot:6},12:{name:"LeGM's Team",slot:5}};
+  // the season starts in the fall, so a schedule read from July on is for the season that starts this year
+  const now0=new Date(), Y0=now0.getMonth()>=6?now0.getFullYear():now0.getFullYear()-1;
+  const iso=md=>{ const m=md.split('/'); if(m.length<2) return ''; const mo=+m[0], d=+m[1]; return (mo>=9?Y0:Y0+1)+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0'); };
+  league={league:'Ball Lovers',id:82878,me:'5',teams:TEAMS,adds:4,tradeDeadline:'2027-03-04',lastRegularWeek:18,playoffTeams:8,
+    weeks:K.map(f=>({n:+f[1],start:iso(f[2]),end:iso(f[3]),games:(f[5]||'').split(',').filter(Boolean).map(x=>x.split('v'))}))};
+}
+const saveK=()=>{ if(league){ wr('league.json',league); say.push('league schedule saved, '+league.weeks.length+' weeks'); } };
+
+// Vikas, Nov 4 2026. Final scores of finished weeks, every matchup, kept for the season in data/results.json so the week forecast can be checked against them
+const etDay=s=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(s));
+const FL=of('F'); let results=null;
+if(FL.length){ results=rd('results.json',{weeks:{}}); if(!results.weeks||typeof results.weeks!=='object') results.weeks={};
+  const lgT=(league||rd('league.json',{teams:{}})).teams||{}, nmT=s=>asc(s).toLowerCase().replace(/\s+/g,' ').trim(), seen={};
+  FL.forEach(f=>{ let tid=f[2]; if(!lgT[tid]){ const hit=Object.keys(lgT).filter(k=>nmT(lgT[k].name)===nmT(tid)); if(hit.length===1) tid=hit[0]; else { say.push('WARNING, a final score row came with the team "'+f[2]+'" that matches no team, it was left out.'); return; } }
+    const w=String(+f[1]); if(!(+w>=1)) return; (results.weeks[w]=results.weeks[w]||{})[tid]={fgm:n(f[3]),fga:n(f[4]),ftm:n(f[5]),fta:n(f[6]),tpm:n(f[7]),pts:n(f[8]),reb:n(f[9]),ast:n(f[10]),stl:n(f[11]),blk:n(f[12]),to:n(f[13])}; seen[w]=1; });
+  Object.keys(seen).forEach(w=>{ const k=Object.keys(results.weeks[w]).length; if(k!==10) say.push('WARNING, week '+w+' has final scores for '+k+' teams, not 10. Read that week again with NCWSCAN.run({mode:\'finals\',weeks:['+w+']}).'); });
+  results.updated=new Date().toISOString().slice(0,16)+'Z'; results.seen=Object.keys(seen); }
+const saveR=()=>{ if(results){ const s=results.seen; delete results.seen; wr('results.json',results); say.push('final scores saved for week '+s.join(' and ')+', '+Object.keys(results.weeks).length+' weeks on file'); } };
+
+// daily scan
+const H=partial?null:of('H')[0];
+if(H){
+  const scan={v:1,at:H[2]+'Z',week:n(H[3]),mode:H[4],me:'5',teams:[],rosters:{},avail:{},q:{},stats:{},matchup:null,tx:[]};
+  of('T').forEach(f=>scan.teams.push({id:f[1],name:asc(f[2]),rank:n(f[3]),w:n(f[4])||0,l:n(f[5])||0,t:n(f[6])||0,waiver:n(f[7]),moves:n(f[8])||0}));
+  of('R').forEach(f=>{ scan.rosters[f[1]]=(f[3]||'').split(',').filter(Boolean).map(x=>x.split(':')); if(scan.rosters[f[1]].length!==+f[2]) say.push('WARNING, roster count mismatch for team '+f[1]+', the line says '+f[2]+' players and lists '+scan.rosters[f[1]].length+'.'); });
+  of('A').forEach(f=>(f[1]||'').split(',').filter(Boolean).forEach(x=>{ const a=x.split(':'); scan.avail[a[0]]=[a[1]||'F',a[2]||'']; }));
+  of('Q').forEach(f=>(f[1]||'').split(',').filter(Boolean).forEach(x=>{ const a=x.split(':'); scan.q[a[0]]=[n(a[1]),n(a[2])]; }));
+  of('S').forEach(f=>{ scan.stats[f[1]]=[f[2],n(f[3])||0].concat(f.slice(4,16).map(t10),[n(f[16]),t10(f[17]),t10(f[18])]); scan.q[f[1]]=[n(f[19]),n(f[20])]; });
+  // Yahoo's last two weeks numbers and its own ranks are worked out after its season numbers, so a scan soon after the last game can have the season line
+  // and no two week line for players who played that night. In weeks 1 and 2 every game is inside the last two weeks, so the season line fills the gap.
+  // From week 3 on a gap is only reported, because the two lines really differ then
+  { const zs=s=>{ const g=i=>s[i]||0, fga=g(4), fta=g(6), pts=g(8), fgp=fga>0?100*g(3)/fga:48.5, ftp=fta>0?100*g(5)/fta:80.5;
+      return 0.010226*(fgp-48.5)*pts+0.008824*(fgp-48.5)-0.12296+0.0075475*(ftp-80.5)*pts-0.0061865*(ftp-80.5)+0.02054+1.004*g(7)-1.689+0.169*pts-2.850+0.440*g(9)-2.621+0.495*g(10)-1.872+2.823*g(11)-3.004+2.065*g(12)-1.446-1.274*g(13)+2.406; };
+    // Vikas, Nov 5 2026, version 26.13. From the 15th day of the season a player who played in the first days has fewer two week games than season games, and that is
+    // normal, not a gap. So in weeks 1 and 2 a two week line that is missing or short counts as a gap, and from week 3 on only a line Yahoo left empty does
+    const gap=Object.keys(scan.stats).filter(i=>{ const s=scan.stats[i]; return s[1]>0 && (s[14]==null || (scan.week && scan.week<=2 && s[14]<s[1])); });
+    // Vikas, Oct 28 2026. Around midnight Pacific Yahoo has already added last night's minutes to the two week split but not yet the game, so its minutes a game read
+    // a third to a half too high for anyone who played (LaVine 47.7 at 12.05 am, 36.0 at 1.54 am). While every game a player has played is inside the two weeks
+    // the two lines must match, so a two week line that disagrees with the season line is set back to the season line
+    const mid=Object.keys(scan.stats).filter(i=>{ const s=scan.stats[i]; return s[1]>0 && s[14]===s[1] && s[15]!=null && s[2]!=null && Math.abs(s[15]-s[2])>0.6; });
+    mid.forEach(i=>{ const s=scan.stats[i]; s[15]=s[2]; s[16]=Math.round(10*zs(s))/10; });
+    if(mid.length){ scan.flag='mid update'; say.push('WARNING, Yahoo was still adding last night\'s games for '+mid.length+' players, their two week minutes did not match their season line and were set back to it. A scan after about 1.30 am Pacific reads them right.'); }
+    // later in the season the two lines differ for real, so the check above no longer applies. Nobody averages more than 44 minutes over two weeks, so a number above it means the same mid update
+    const hi=Object.keys(scan.stats).filter(i=>{ const s=scan.stats[i]; return s[15]!=null && s[15]>44; });
+    if(hi.length) scan.flag='mid update';
+    if(hi.length) say.push('WARNING, '+hi.length+' players show more than 44 minutes a game over the last two weeks, so Yahoo was probably still adding last night\'s games. Scan again after about 1.30 am Pacific.');
+    if(gap.length && scan.week && scan.week<=2){ gap.forEach(i=>{ const s=scan.stats[i]; s[14]=s[1]; s[15]=s[2]; s[16]=Math.round(10*zs(s))/10; }); say.push('NOTE, Yahoo had not finished its two week numbers for '+gap.length+' players, so their season line was used, which is the same thing in week '+scan.week+'.'); }
+    else if(gap.length>0.1*Object.keys(scan.stats).length && (scan.flag='two week gap')) say.push('WARNING, '+gap.length+' of '+Object.keys(scan.stats).length+' players have no two week numbers from Yahoo. Yahoo was probably still updating. A scan an hour later should have them.'); }
+  // checks on the shape of the scan. A scan can carry valid checksums and still be wrong, so all of these run before anything is written
+  const wrong=[], tid=scan.teams.map(t=>t.id), rid=of('R').map(f=>f[1]), dup=a=>a.filter((x,i)=>a.indexOf(x)!==i);
+  const who=i=>(players.p[i]?players.p[i][0]+' ':'')+'(id '+i+')', nm=s=>asc(s).toLowerCase().replace(/\s+/g,' ').trim();
+  // live score rows. The scanner writes the team NAME in place of the id when the name on the matchup page did not match the standings. Map it back or refuse
+  const M=of('M');
+  M.forEach(f=>{ if(tid.indexOf(f[2])>=0) return; const a=nm(f[2]); let hit=scan.teams.filter(t=>nm(t.name)===a); if(!hit.length) hit=scan.teams.filter(t=>nm(t.name)&&(' '+a+' ').indexOf(' '+nm(t.name)+' ')>=0);
+    if(a&&hit.length===1){ say.push('WARNING, a live score row came with the team name "'+f[2]+'" in place of a team id. It was matched by name to team '+hit[0].id+' '+hit[0].name+'.'); f[2]=hit[0].id; } else wrong.push('the live score row for "'+f[2]+'" does not match exactly one team'); });
+  if(dup(M.map(f=>f[2])).length) wrong.push('two live score rows are for the same team');
+  if(M.length){ scan.matchup={week:n(M[0][1]),rows:M.map(f=>({tid:f[2],fgm:n(f[3]),fga:n(f[4]),ftm:n(f[5]),fta:n(f[6]),tpm:n(f[7]),pts:n(f[8]),reb:n(f[9]),ast:n(f[10]),stl:n(f[11]),blk:n(f[12]),to:n(f[13])})),rem:(of('G')[0]||[]).slice(1).map(n)}; }
+  of('X').forEach(f=>scan.tx.push([f[1],f[2],f[3]]));
+  // Vikas, Nov 11 2026, version 26.18. N lines, the live score of every matchup this week. Kept as scan.live only when all ten teams came with the right week
+  { const NL=of('N'); if(NL.length){ const rows={}; let okN=true;
+      NL.forEach(f=>{ let t=f[2]; if(tid.indexOf(t)<0){ const a=nm(t), hit=scan.teams.filter(x=>nm(x.name)===a); if(hit.length===1) t=hit[0].id; else { okN=false; return; } }
+        if(+f[1]!==scan.week || rows[t]) okN=false; rows[t]={fgm:n(f[3]),fga:n(f[4]),ftm:n(f[5]),fta:n(f[6]),tpm:n(f[7]),pts:n(f[8]),reb:n(f[9]),ast:n(f[10]),stl:n(f[11]),blk:n(f[12]),to:n(f[13])}; });
+      if(okN && Object.keys(rows).length===scan.teams.length) scan.live={week:scan.week,rows};
+      else say.push('WARNING, the live scores of the other matchups came for '+Object.keys(rows).length+' teams or did not match the week, so they were left out. The standings forecast runs without them.'); } }
+  const probs=[]; if(scan.teams.length!==10) probs.push('expected 10 teams and saw '+scan.teams.length); if(Object.keys(scan.rosters).length!==10) probs.push('expected 10 rosters and saw '+Object.keys(scan.rosters).length); if(!scan.rosters['11']||scan.rosters['11'].length<10) probs.push('my roster is missing or short'); if(Object.values(scan.rosters).some(r=>r.length<10)) probs.push('a roster has fewer than 10 players'); if(!Object.keys(scan.avail).length) probs.push('no available players were read');
+  if(scan.mode==='season' && scan.week && scan.week<=18 && (!scan.matchup || scan.matchup.rows.length!==2)) probs.push('the live matchup score was not read. Yahoo hides it while games are in progress, so wait until the last game of the night has ended and scan again. The site keeps showing the last good scan until then');
+  if(probs.length) stop('CHECK FAILED, the scan is incomplete, '+probs.join(', ')+'. Nothing written. Run the scan again.');
+  const at=Date.parse(H[2]+':00Z'), atOk=/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(H[2]) && !isNaN(at) && new Date(at).toISOString().slice(0,16)===H[2];
+  if(!atOk) wrong.push('the scan time "'+H[2]+'" is not a valid time'); else if(at>Date.now()+36*3600e3) wrong.push('the scan time '+H[2]+' is more than 36 hours ahead of the clock on this computer');
+  if(scan.mode==='season' && !scan.week) wrong.push('a season mode scan has no week number');
+  dup(tid).forEach(t=>wrong.push('team '+t+' has two team lines')); dup(rid).forEach(t=>wrong.push('team '+t+' has two roster lines'));
+  rid.filter(t=>tid.indexOf(t)<0).forEach(t=>wrong.push('the roster line for team '+t+' has no team line')); tid.filter(t=>rid.indexOf(t)<0).forEach(t=>wrong.push('team '+t+' has no roster line'));
+  const lg=league||rd('league.json',null); if(lg&&lg.teams) tid.filter(t=>Object.keys(lg.teams).indexOf(t)<0).forEach(t=>wrong.push('team id '+t+' is not a team in data/league.json'));
+  const on=Object.create(null); Object.keys(scan.rosters).forEach(t=>scan.rosters[t].forEach(x=>{ if(on[x[0]]===t) wrong.push('player '+who(x[0])+' is listed twice on the roster of team '+t); else if(on[x[0]]) wrong.push('player '+who(x[0])+' is on two rosters, teams '+on[x[0]]+' and '+t); else on[x[0]]=t; }));
+  Object.keys(scan.avail).filter(i=>on[i]).forEach(i=>wrong.push('player '+who(i)+' is on the roster of team '+on[i]+' and also in the available list'));
+  // the H line counts. The scanner counts its team lines, and every player it met: all rostered, all available, plus players seen only in transactions
+  if(+H[5]!==tid.length) wrong.push('the head line says '+H[5]+' teams and there are '+tid.length+' team lines');
+  const met=new Set(Object.keys(on).concat(Object.keys(scan.avail))), txOnly=new Set(); scan.tx.forEach(x=>(x[2]||'').split(',').filter(Boolean).forEach(m=>{ const i=m.slice(1); if(!met.has(i)) txOnly.add(i); }));
+  if(!(+H[6]>=met.size && +H[6]<=met.size+txOnly.size)) wrong.push('the head line says '+H[6]+' players and the lines hold '+met.size+(txOnly.size?' (plus '+txOnly.size+' seen only in transactions)':'')+', so a roster or available line is missing or extra');
+  if(wrong.length) stop('CHECK FAILED, the scan does not add up, '+wrong.join(', ')+'. Run the scan again. Nothing written.');
+  const prev=rd('scan.json',null), pat=prev?Date.parse(prev.at):NaN;
+  if(!force && at<pat) stop('CHECK FAILED, this scan was taken '+scan.at+' and the scan on file is newer, '+prev.at+'. To load the older scan anyway run it again with --force. Nothing written.');
+  // things that can really happen. The scan still saves and each one gets a loud line
+  const SLOT=['PG','SG','G','SF','PF','F','C','Util','BN','IL','IL+'];
+  Object.keys(scan.rosters).forEach(t=>{ const r=scan.rosters[t]; if(r.length<13) say.push('WARNING, team '+t+' has only '+r.length+' players on its roster. Check that the roster was read in full.');
+    r.forEach(x=>{ if(SLOT.indexOf(x[1])<0) say.push('WARNING, team '+t+' player '+who(x[0])+' has the roster slot "'+(x[1]||'')+'" and that is not a slot this league uses.'); if((x[2]||'').length>5) say.push('WARNING, team '+t+' player '+who(x[0])+' has an injury tag that is too long, "'+x[2]+'".'); }); });
+  Object.keys(scan.avail).forEach(i=>{ if(scan.avail[i][1].length>5) say.push('WARNING, available player '+who(i)+' has an injury tag that is too long, "'+scan.avail[i][1]+'".'); });
+  of('T').forEach(f=>{ const e=[]; if(f[3]===''||f[3]==null) e.push('rank'); if(f[7]===''||f[7]==null) e.push('waiver spot'); if(e.length) say.push('WARNING, team '+f[1]+' came with an empty '+e.join(' and ')+'.'); });
+  const ids=new Set(); Object.values(scan.rosters).forEach(r=>r.forEach(x=>ids.add(x[0]))); Object.keys(scan.avail).forEach(i=>ids.add(i));
+  const missing=[...ids].filter(i=>!players.p[i]);
+  if(missing.length) say.push('WARNING, no name on file for player ids '+missing.join(' ')+'. Run the scan again with NCWSCAN.run({all:true}) to get them.');
+  const sig=s=>Object.keys(s.rosters).sort().map(t=>t+':'+s.rosters[t].map(x=>x[0]).sort().join('.')).join('|');
+  saveP(); saveK(); saveR();
+  if(prev && prev.at!==scan.at) wr('scan_prev.json',prev);
+  wr('scan.json',scan);
+  // Vikas, Nov 4 2026. The first scan of each fantasy week is kept in data/starts.json. The site works out the Monday call for the week from it, and checks past
+  // weeks' calls against the final scores. A first scan read while Yahoo was still updating is replaced by a clean one from the same day
+  if(scan.week){ const starts=rd('starts.json',{weeks:{}}); if(!starts.weeks||typeof starts.weeks!=='object') starts.weeks={};
+    const lg=league||rd('league.json',null), wo=lg&&Array.isArray(lg.weeks)?lg.weeks.find(w=>w.n===scan.week):null, cur=starts.weeks[scan.week], sd=etDay(scan.at);
+    if(!cur || (cur.flag && !scan.flag && etDay(cur.at)===sd) || (force && cur.at>scan.at)){ const s2=JSON.parse(JSON.stringify(scan)); if(wo && sd>wo.start) s2.late=true; starts.weeks[scan.week]=s2; wr('starts.json',starts);
+      say.push('first scan of week '+scan.week+' saved for the Monday call'+(s2.late?', but it was read after the week began, so it is not used to check the forecast':'')); } }
+  const wk=rd('scan_week.json',null); let wmsg='trade list keeps this week\'s snapshot';
+  // Vikas, Nov 4 2026. A scan read while Yahoo was still updating carries a flag. It still refreshes the snapshot when a roster changed, since the trade list needs the
+  // new rosters, but the flag goes with it and the next clean scan of the same week replaces it even with no roster change. --snapshot forces a refresh, recovery only
+  if(!wk || wk.week!==scan.week || sig(wk)!==sig(scan) || (wk.flag && !scan.flag) || snapForce){ wr('scan_week.json',scan); wmsg=!wk?'first weekly snapshot saved':wk.week!==scan.week?'new fantasy week, trade snapshot refreshed':sig(wk)!==sig(scan)?'a roster changed in the league, trade snapshot refreshed':snapForce?'trade snapshot refreshed on request':'the snapshot on file came from a scan Yahoo was still updating, so this clean scan replaces it';
+    if(scan.flag) wmsg+=', but this scan was read while Yahoo was still updating, so the next clean scan replaces the snapshot'; }
+  const rostered=Object.values(scan.rosters).reduce((a,r)=>a+r.length,0);
+  say.push('scan saved, '+scan.at+', week '+scan.week+', '+scan.mode+' mode, '+scan.teams.length+' teams, '+rostered+' rostered, '+Object.keys(scan.avail).length+' available, '+Object.keys(scan.stats).length+' stat lines, '+scan.tx.length+' transactions, '+newP+' new players. '+wmsg+'.');
+} else { saveP(); saveK(); saveR(); if(!K.length && !FL.length) say.push('player names saved, '+of('P').length+' lines, '+newP+' new, no scan written'); }
+done();

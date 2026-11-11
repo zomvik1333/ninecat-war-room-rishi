@@ -1,0 +1,26 @@
+{
+ "v": 1,
+ "made": "2026-11-11",
+ "about": "Example only. Copy this file somewhere outside the project folder, fill it in, and load it on the site under Your private manager notes. Never push your real notes to GitHub. The key of each team is its Yahoo team id.",
+ "teams": {
+  "4": {
+   "name": "Example manager",
+   "ease": 0,
+   "reply": "normal",
+   "style": "numbers",
+   "deal": "fair",
+   "needPos": ["C"],
+   "needCats": ["AST", "REB"],
+   "keep": ["A player he will not trade"],
+   "prize": ["A player he rates very highly"],
+   "like": ["One of your players he likes"],
+   "dislike": ["One of your players he does not want"],
+   "doubt": [],
+   "yes": [],
+   "tips": ["Short reminders about how to pitch him, up to 30"],
+   "talks": [
+    { "give": ["Your player"], "get": ["His player"], "at": "2026-11-11", "level": "maybe", "note": "He is thinking about it" }
+   ]
+  }
+ }
+}

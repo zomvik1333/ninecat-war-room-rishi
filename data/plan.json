@@ -1,0 +1,28 @@
+{
+ "made": "2026-11-11",
+ "note": "The season plan for every device. Order is FG%, FT%, 3PM, PTS, REB, AST, STL, BLK, TO. Roles are lock, build, bonus, low, punt and swing. This starting plan was worked out from the Registered Nurse roster on Nov 11 2026, the three cats it wins most often are locks, the next three are the build pool and the weakest is the punt. Change it here or on the Season plan panel of the site.",
+ "roles": [
+  "lock",
+  "bonus",
+  "low",
+  "punt",
+  "build",
+  "lock",
+  "build",
+  "lock",
+  "build"
+ ],
+ "never": [],
+ "hold": {},
+ "keep": [],
+ "ask": {},
+ "askNote": "Asking prices. Name a player and a rank, and a trade that sends him must bring back a player ranked that high or better. own means a player ranked as high as him.",
+ "rulesNote": "never is never traded or dropped, hold is not traded until that day, keep is never suggested as a drop. Names as Yahoo shows them.",
+ "tiers": {
+  "trade": [],
+  "float": [],
+  "drop": []
+ },
+ "review": {},
+ "tiersNote": "Your own calls. trade is trade only and never dropped, float is earning his spot and never dropped for a stream, drop goes for any clear upgrade. A player on no list counts as droppable."
+}
