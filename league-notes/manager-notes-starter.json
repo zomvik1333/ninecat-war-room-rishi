@@ -1,0 +1,256 @@
+{
+ "v": 1,
+ "made": "2026-11-11",
+ "about": "Starter manager notes for the Nine Cat War Room, shared by Vikas on Nov 11 2026. His read of each manager from calls and chats, trimmed to what holds for any team. This starter copy is in the public repo because Vikas chose to share it. Copy it out of the project folder before you add your own notes, and never push your own copy.",
+ "teams": {
+  "1": {
+   "name": "Vinny",
+   "ease": 0,
+   "reply": "normal",
+   "style": "numbers",
+   "noTwo": true,
+   "valueBy": "draft",
+   "pairs": true,
+   "noLate": true,
+   "needPos": [],
+   "needCats": [],
+   "keep": [
+    "Nickeil Alexander-Walker",
+    "Michael Porter Jr."
+   ],
+   "prize": [
+    "Coby White",
+    "Jalen Suggs",
+    "Egor Demin",
+    "Jaren Jackson Jr."
+   ],
+   "like": [],
+   "dislike": [],
+   "doubt": [],
+   "yes": [],
+   "tips": [
+    "Fair manager on his end. Cares about draft order and points, so lead with an even deal on those terms",
+    "Lead with the reasoning and real numbers he can check",
+    "Never stretch a fact",
+    "Leave him a small visible edge or a clear reason it is even",
+    "Plan the fallback before sending, he will counter",
+    "Thinks in draft rounds and weighs draft order and current stats most",
+    "Will not pay for upside talk or speculation. Wants known production",
+    "Rookies only at a discount for the risk",
+    "Will move Isaiah Hartenstein",
+    "Jaren Jackson Jr. only for a lot",
+    "No two for one now, no roster room. Maybe later in the season",
+    "No late pieces. Players taken in the last two rounds or picked up after the draft do nothing for him, unless he sends a late piece back",
+    "Oct 23, keeps Alexander-Walker and Michael Porter Jr. Dejounte Murray was on the market, but he loves him and is iffy on moving him",
+    "Oct 23, a rebound and big man team that punts assists"
+   ],
+   "at": "2026-11-11"
+  },
+  "2": {
+   "name": "Anshu",
+   "ease": 0,
+   "reply": "slow",
+   "style": "simple",
+   "needPos": [],
+   "needCats": [
+    "AST",
+    "REB"
+   ],
+   "keep": [],
+   "prize": [],
+   "like": [],
+   "dislike": [],
+   "doubt": [],
+   "yes": [
+    "Darius Acuff Jr.",
+    "Julian Champagnie",
+    "Naz Reid",
+    "Zion Williamson"
+   ],
+   "tips": [
+    "Rarely checks the app",
+    "Nov 5, chases assists and rebounds, wants players who give those",
+    "Nov 5, said he will move Acuff, Zion, Naz Reid and Champagnie, nobody else",
+    "Nov 6, sat 8th, strong FT% and PTS, weak REB and AST",
+    "Names his own deals and offers straight swaps. Thinks in names and in points, rebounds and assists, not turnovers",
+    "Nov 6, has not offered Flagg, Maxey, Embiid, Booker, George, Jarrett Allen, Braun, Anunoby or Washington, treat them as off the table",
+    "Send one clear offer by text with two lines of why and leave it a day",
+    "Small straight swaps he has floated himself get a yes, bigger packages sit unanswered"
+   ],
+   "at": "2026-11-11"
+  },
+  "3": {
+   "name": "Chris",
+   "ease": 0,
+   "reply": "normal",
+   "style": "",
+   "needPos": [],
+   "needCats": [],
+   "keep": [],
+   "prize": [],
+   "like": [],
+   "dislike": [],
+   "doubt": [],
+   "yes": [],
+   "tips": [
+    "Chris is Cristian and runs Extraterrestrial. Nothing else known yet, so start with an even deal and ask what he needs"
+   ],
+   "at": "2026-11-11"
+  },
+  "4": {
+   "name": "Haziq",
+   "ease": 0,
+   "reply": "normal",
+   "style": "cats",
+   "pairs": true,
+   "needPos": [
+    "C"
+   ],
+   "needCats": [
+    "BLK",
+    "REB"
+   ],
+   "keep": [
+    "Fred VanVleet"
+   ],
+   "prize": [
+    "Josh Hart"
+   ],
+   "like": [],
+   "dislike": [],
+   "doubt": [],
+   "yes": [],
+   "tips": [
+    "Lead with a center and with blocks and rebounds",
+    "Argue by cats, not by ranks or stars",
+    "He reads the news, so answer injury and role points head on",
+    "Picked up Mitchell Robinson and rates him"
+   ],
+   "at": "2026-11-11"
+  },
+  "6": {
+   "name": "Russi",
+   "ease": 0.5,
+   "reply": "days",
+   "style": "ai",
+   "needPos": [
+    "SF",
+    "PF",
+    "PG",
+    "SG"
+   ],
+   "needCats": [],
+   "keep": [
+    "Dyson Daniels"
+   ],
+   "prize": [
+    "Kel'el Ware",
+    "Jusuf Nurkic",
+    "Derik Queen",
+    "Bam Adebayo",
+    "Jalen Williams"
+   ],
+   "like": [],
+   "dislike": [],
+   "doubt": [],
+   "yes": [],
+   "tips": [
+    "Make the case easy for an AI to check. Plain numbers, cats, games and roles",
+    "He needs forwards and guards and has a center surplus",
+    "Wants two pieces for Ware and thinks Ware splits center minutes evenly with Myles Turner",
+    "Send one offer and give it days",
+    "A deal that looks fair to the group helps",
+    "Has said he has no urgency to trade",
+    "Thinks Bam is worth a first round player",
+    "Will never trade for a waiver player, sees no value in them",
+    "Does not care about threes made, do not sell 3PM to him",
+    "May drop a good player without much thought, so check his drops after every scan"
+   ],
+   "at": "2026-11-11"
+  },
+  "7": {
+   "name": "Aditya",
+   "ease": -0.5,
+   "reply": "normal",
+   "style": "explain",
+   "callout": true,
+   "needPos": [
+    "SF",
+    "PF",
+    "C"
+   ],
+   "needCats": [],
+   "keep": [
+    "Jaylen Brown"
+   ],
+   "prize": [
+    "Austin Reaves",
+    "Jaylen Brown"
+   ],
+   "move": [
+    "Miles Bridges"
+   ],
+   "like": [],
+   "dislike": [],
+   "doubt": [],
+   "yes": [],
+   "tips": [
+    "Offer a guard for forward or center swap",
+    "Explain it with numbers and expect pushback before a yes",
+    "Keep the first offer clearly fair, a light one risks a group chat callout",
+    "Nov 8, fine moving Miles Bridges",
+    "Never takes waiver wire players unless they start going off",
+    "Wins turnovers by small margins and guards it, so do not sell him extra turnovers as free",
+    "First in the league and may wait two or three weeks to trade",
+    "May drop a good player without much thought, so check his drops after every scan"
+   ],
+   "at": "2026-11-11"
+  },
+  "8": {
+   "name": "Rohan",
+   "ease": -1,
+   "reply": "slow",
+   "style": "simple",
+   "needPos": [],
+   "needCats": [],
+   "keep": [
+    "Tyrese Haliburton"
+   ],
+   "prize": [],
+   "like": [],
+   "dislike": [],
+   "doubt": [],
+   "yes": [],
+   "tips": [
+    "Keep it to one short message with the few numbers that matter",
+    "Show him what his team is missing, he does not follow his roster closely",
+    "Expect lowball counters and do not chase",
+    "Nov 8, said he may be open to a trade",
+    "Will not trade Tyrese Haliburton",
+    "May drop a good player without much thought, so check his drops after every scan"
+   ],
+   "at": "2026-11-11"
+  },
+  "12": {
+   "name": "Nitin",
+   "ease": 0,
+   "reply": "slow",
+   "style": "explain",
+   "needPos": [],
+   "needCats": [],
+   "keep": [],
+   "prize": [],
+   "like": [],
+   "dislike": [],
+   "doubt": [],
+   "yes": [],
+   "tips": [
+    "Nitin runs LeGM's Team",
+    "Call him, he rarely answers texts",
+    "Keep it calm and factual, he is level headed",
+    "Likes the Lakers, which can open the conversation"
+   ],
+   "at": "2026-11-11"
+  }
+ }
+}

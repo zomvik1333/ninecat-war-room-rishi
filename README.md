@@ -59,6 +59,7 @@ If you use the Claude desktop app with the Chrome extension, Claude can do the w
 * Your rules. In the same file, never is never traded or dropped, hold is not traded until a date, keep is never suggested as a drop, and ask sets a price a trade must meet. tiers lets you mark players trade only, floating or droppable. All of it starts empty
 * Your notes on other managers. The site can load a private notes file so trades are ranked by what each manager values. `notes-example.json` shows the shape. Keep your real file outside this folder, it must never be pushed to GitHub. Load it on the site under Your private manager notes. It stays in your browser only
 * A manager marked `"deal":"fair"` in your notes gets a full search of every deal shape on his page under By manager
+* A starter notes file from Vikas is in `league-notes/`. It holds his read of eight managers as of Nov 11. Read `league-notes/READ-ME-FIRST.txt`, then copy `manager-notes-starter.json` out of this folder before you add anything of your own
 
 ## What is in here
 

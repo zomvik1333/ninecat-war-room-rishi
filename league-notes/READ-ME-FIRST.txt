@@ -1,0 +1,24 @@
+Manager notes for your Nine Cat War Room
+
+What this is
+* Vikas's read of eight managers in the league from his calls and chats, as of Nov 11 2026
+* Who answers fast, who counters, who wants what, who will not move which player, and how to pitch each one
+* Your own team is not in the file. Vikas's team is not in it either
+
+How to load it
+1. Copy manager-notes-starter.json out of this folder to somewhere else on your computer
+2. Open your site, go to Pickups and trades, then Trades
+3. Find Your private manager notes and press Load notes file
+4. Pick the file. The trades page reranks by what each manager values
+
+Keep it private
+* This starter file is in the public repo because Vikas chose to share it. Anyone who finds the repo can read it
+* Once you add your own notes, keep your copy outside the project folder and never push it. Your own reads of the league should stay yours
+* The notes stay in your browser only. Load the file again on each device you use
+
+Make it yours
+* The file has no deals, no opinions on your players and no fair or win setting. Those were about Vikas's team, so they were left out
+* To get the full search of every deal shape with a manager, add "deal":"fair" to that manager in the file and load it again
+* Add what a manager thinks of your players under like, dislike and doubt
+* Add your own offers under talks. notes-example.json in the repo shows the shape
+* These are one person's reads. Check them against what you hear yourself
